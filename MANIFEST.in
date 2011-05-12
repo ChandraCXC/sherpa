@@ -1,0 +1,27 @@
+# Header files
+recursive-include sherpa/include *.hh
+
+# Test files
+recursive-include sherpa test_*.py
+
+# XSPEC module sources
+include sherpa/astro/xspec/src/*.cc
+
+# Region module sources
+include sherpa/astro/utils/src/_region.cc
+
+# WCS module sources
+include sherpa/astro/utils/src/_wcs.cc
+
+# Sherpa executable
+include sherpa/sherpa
+include sherpa/ipythonrc-sherpa
+include sherpa/sherpa_py
+include sherpa/sherpa.rc
+
+# Sherpa distutils
+include _addons.py
+include build_clib.py
+include build_ext.py
+include _fileLister.py
+include install_lib.py
