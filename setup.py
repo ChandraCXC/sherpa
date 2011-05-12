@@ -583,9 +583,9 @@ if conf['xspec_library_dir'] is not None:
 #
 ###############################################################################
 
-# CIAO 4.3 release, Sherpa package 1
+# CIAO 4.4 beta release
 setup(name='sherpa',
-      version='4.3.1',
+      version='4.4 beta',
       author='Smithsonian Astrophysical Observatory / Chandra X-Ray Center',
       author_email='cxchelp@head.cfa.harvard.edu',
       url='http://cxc.harvard.edu/sherpa/',
@@ -602,6 +602,7 @@ setup(name='sherpa',
                 'sherpa.astro',
                 'sherpa.astro.io',
                 'sherpa.astro.models',
+                'sherpa.astro.optical',
                 'sherpa.astro.ui',
                 'sherpa.astro.utils',
                 'sherpa.astro.xspec'],
@@ -619,6 +620,7 @@ setup(name='sherpa',
                     'sherpa.astro': ['tests/test_*.py'],
                     'sherpa.astro.io': ['tests/test_*.py'],
                     'sherpa.astro.models': ['tests/test_*.py'],
+                    'sherpa.astro.optical': ['tests/test_*.py'],
                     'sherpa.astro.ui': ['tests/test_*.py'],
                     'sherpa.astro.utils': ['tests/test_*.py'],
                     'sherpa.astro.xspec': ['tests/test_*.py']},

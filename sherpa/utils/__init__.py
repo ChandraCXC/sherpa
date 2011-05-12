@@ -59,7 +59,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaTest', 'SherpaTestCase',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'dataspace1d', 'dataspace2d', 'demuller',
-           'divide_run_parallel', 'erf', 'export_method', 'extract_kernel',
+           'divide_run_parallel', 'erf', 'erfinv', 'export_method', 'extract_kernel',
            'filter_bins', 'gamma', 'get_func_usage', 'get_fwhm',
            'get_keyword_defaults', 'get_keyword_names', 'get_midpoint',
            'get_num_args', 'get_peak', 'get_position', 'get_valley',
@@ -207,6 +207,9 @@ class SherpaTest(numpytest.NumpyTest):
 
 # at what precisions do we assume equality in energy grids?
 eps = numpy.finfo(numpy.float32).eps
+
+def erfinv(y):
+    return ndtri((y+1.0)/2.0)/numpy.sqrt(2.0)
 
 def filter_bins(mins, maxes, axislist):
     mask=None

@@ -1154,8 +1154,8 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
                 err_q.put( EstNewMin(parvals) )
                 return
             except Exception, e:
-                err_q.put( e.__class__() )
-                #err_q.put(e)
+                #err_q.put( e.__class__() )
+                err_q.put(e)
                 return
 
         out_q.put(results)

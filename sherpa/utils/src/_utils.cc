@@ -335,6 +335,28 @@ static PyObject* erf( PyObject* self, PyObject* args )
 
 }
 
+static PyObject* ndtri( PyObject* self, PyObject* args )
+{
+
+  DoubleArray a;
+
+  if( !PyArg_ParseTuple( args, (char*)"O&",
+			 (converter)sherpa::convert_to_array< DoubleArray >,
+			 &a ) )
+    return NULL;
+
+  npy_intp nelem = a.get_size();
+
+  DoubleArray result;
+  if ( EXIT_SUCCESS != result.create( a.get_ndim(), a.get_dims() ) )
+    return NULL;
+
+  for ( npy_intp ii = 0; ii < nelem; ii++ )
+    result[ii] = ndtri( a[ii] );
+
+  return result.return_new_ref();
+
+}
 
 template <int (*fcmp)( const double x1, const double x2,
 		       const double epsilon )>
@@ -705,6 +727,9 @@ static PyMethodDef UtilsFcts[] = {
 
   // Error Function
   FCTSPEC(erf, erf),
+
+  // Inverse of Normal distribution Function
+  FCTSPEC(ndtri, ndtri),
 
   // This function determines whether x and y are approximately equal
   // to a relative accuracy epsilon.

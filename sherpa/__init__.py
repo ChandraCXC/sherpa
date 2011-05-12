@@ -26,8 +26,8 @@ import sys
 
 __all__ = ('banner', 'get_include', 'test')
 
-__versionstr__ = '4.3.1'
-__version__ = 40301
+__versionstr__ = '4.4 beta'
+__version__ = 40400
 
 class Formatter(logging.Formatter):
     def format(self, record):
@@ -50,7 +50,7 @@ _banner = """
 -----------------------------------------------------
 Welcome to Sherpa: CXC's Modeling and Fitting Package
 -----------------------------------------------------
-Version: Sherpa %s Monday, July 19, 2010
+Version: Sherpa %s Monday, May 12, 2011
 """ % __versionstr__
 
 

@@ -20,6 +20,7 @@ __all__ = ['DataARF', 'DataRMF','DataPHA', 'DataIMG', 'DataIMGInt', 'Data1D',
 _session = utils.Session()
 _session._add_model_types(sherpa.models.basic)
 _session._add_model_types(sherpa.astro.models)
+_session._add_model_types(sherpa.astro.optical)
 # To add PSFModel to list -- doesn't inherit from ArithmeticModel
 _session._add_model_types(sherpa.instrument,baselist=(sherpa.models.Model,))
 # Get RMFModel, ARFModel in list of models

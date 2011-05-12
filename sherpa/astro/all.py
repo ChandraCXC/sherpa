@@ -15,6 +15,7 @@ except ImportError:
             'be available')
 
 from sherpa.astro.models import *
+from sherpa.astro.optical import *
 
 try:
     from sherpa.astro.plot import *
