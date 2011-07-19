@@ -442,21 +442,13 @@ class DataPlot(Plot):
 
 class PSFKernelPlot(DataPlot):
     "Derived class for creating 1D PSF kernel data plots"
-        
+
     def prepare(self, psf, data=None, stat=None):
-        
-        self.ylabel = 'PSF value'
-        self.xlabel = 'PSF Kernel size'
+        psfdata = psf.get_kernel(data)
+        DataPlot.prepare(self, psfdata, stat)
+        #self.ylabel = 'PSF value'
+        #self.xlabel = 'PSF Kernel size'
         self.title  = 'PSF Kernel'
-
-        if callable(psf.kernel):
-            self.plot_prefs = backend.get_model_plot_defaults()
-            self.y, size = psf.get_kernel(data)
-            self.x = numpy.arange( len(self.y) ) + 1.0
-            return
-
-        self.y, size = psf.get_kernel(data)
-        self.x = numpy.arange( len(self.y) ) + 1.0
 
 
 class DataContour(Contour):
@@ -517,26 +509,13 @@ class DataContour(Contour):
 
 class PSFKernelContour(DataContour):
     "Derived class for creating 2D PSF Kernel contours"
-        
+
     def prepare(self, psf, data=None, stat=None):
-        shape=None
-        self.xlabel = 'PSF Kernel size x0'
-        self.ylabel = 'PSF Kernel size x1'
+        psfdata = psf.get_kernel(data)
+        DataContour.prepare(self, psfdata)
+        #self.xlabel = 'PSF Kernel size x0'
+        #self.ylabel = 'PSF Kernel size x1'
         self.title  = 'PSF Kernel'
-
-        if callable(psf.kernel):
-            self.contour_prefs = backend.get_model_contour_defaults()
-            self.y, shape = psf.get_kernel(data)
-
-        else:
-            self.y, shape = psf.get_kernel(data)
-
-        x0_size, x1_size = shape
-        x0 = numpy.arange(x1_size, dtype=SherpaFloat)+1.
-        x1 = numpy.arange(x0_size, dtype=SherpaFloat)+1.
-        x0, x1 = numpy.meshgrid( x0, x1)
-        self.x0 = x0.ravel()
-        self.x1 = x1.ravel()
 
 
 class ModelPlot(Plot):
@@ -624,18 +603,12 @@ class ComponentSourcePlot(SourcePlot):
         self.title = 'Source model component: %s' % model.name
 
 
-class PSFPlot(DataPlot, ModelPlot):
+class PSFPlot(DataPlot):
     "Derived class for creating 1D PSF kernel data plots"
-        
-    def prepare(self, psf, data=None, stat=None):
-        if callable(psf.kernel):
-            self.plot_prefs = backend.get_model_plot_defaults()
-            ModelPlot.prepare(self, data, psf.kernel)
-            self.title = psf.kernel.name
-            return
 
-        self.plot_prefs = backend.get_data_plot_defaults()
-        DataPlot.prepare(self, psf.kernel, stat)
+    def prepare(self, psf, data=None, stat=None):
+        psfdata = psf.get_kernel(data, False)
+        DataPlot.prepare(self, psfdata, stat)
         self.title = psf.kernel.name
 
 
@@ -696,17 +669,13 @@ class ModelContour(Contour):
                         overcontour=overcontour, clearwindow=clearwindow)
 
 
-class PSFContour(DataContour, ModelContour):
+class PSFContour(DataContour):
     "Derived class for creating 2D PSF contours"
-        
-    def prepare(self, psf, data=None, stat=None):
-        if callable(psf.kernel):
-            self.contour_prefs = backend.get_model_contour_defaults()
-            ModelContour.prepare(self, data, psf.kernel)
-        else:
-            DataContour.prepare(self, psf.kernel)
-        self.title  = psf.kernel.name
 
+    def prepare(self, psf, data=None, stat=None):
+        psfdata = psf.get_kernel(data, False)
+        DataContour.prepare(self, psfdata)
+        self.title  = psf.kernel.name
 
 
 class SourceContour(ModelContour):

@@ -1,6 +1,6 @@
 #_PYTHON_INSERT_SAO_COPYRIGHT_HERE_(2008)_
 #_PYTHON_INSERT_GPL_LICENSE_HERE_
-from sherpa.data import Data
+from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import *
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit, SherpaFloat
 from itertools import izip
@@ -53,13 +53,16 @@ class Kernel(NoNewAttributesAfterInit):
 
     def __init__(self, dshape, kshape, norm=False, frozen=True,
                  center=None, args=[], kwargs={},
-                 do_pad=False, pad_mask=None):
+                 do_pad=False, pad_mask=None, origin=None):
+
+        if origin is None:
+            origin = numpy.zeros(len(kshape))
         self.dshape = dshape
         self.kshape = kshape
         self.kernel = None
         self.skshape= None
         self.norm   = norm
-        self.origin = numpy.zeros(len(kshape))
+        self.origin = origin
         self.frozen = frozen
         self.center = center
         self.args = args
@@ -224,7 +227,7 @@ class PSFKernel(Kernel):
     def __init__(self, dshape, kshape, is_model=False, norm=True, frozen=True,
                  center=None, size=None, lo=None, hi=None, width=None,
                  args=[], kwargs={},
-                 pad_mask=None, do_pad=False):
+                 pad_mask=None, do_pad=False, origin=None):
 
         self.is_model = is_model
         self.size = size
@@ -234,7 +237,9 @@ class PSFKernel(Kernel):
         self.radial = 0
         Kernel.__init__(self, dshape, kshape, norm, frozen,
                         center, args, kwargs,
-                        do_pad, pad_mask)
+                        do_pad, pad_mask, origin)
+        self.origin = origin
+
 
     def __str__(self):
         ss = [
@@ -249,37 +254,38 @@ class PSFKernel(Kernel):
 
     def init_kernel(self, kernel):
         # If PSF dataset, normalize before kernel extraction
-        if not self.is_model and self.norm:
+        #if not self.is_model and self.norm:
+        if self.norm:
             kernel = normalize(kernel)
 
-        (kernel, kshape, self.frac) = extract_kernel(kernel,
-                                                     self.kshape,
-                                                     self.size,
-                                                     self.center,
-                                                     self.lo,
-                                                     self.hi,
-                                                     self.width,
-                                                     self.radial)
+        (kernel, kshape, self.frac,
+         lo, hi) = extract_kernel(kernel, self.kshape, self.size, self.center,
+                                  self.lo, self.hi, self.width, self.radial)
 
         # If PSF model, then normalize integrated volume to 1, after
         # kernel extraction
-        if self.is_model and self.norm:
-            self.frac = 1.0
-            kernel = normalize(kernel)
+        #if self.is_model and self.norm:
+        #    self.frac = 1.0
+        #    kernel = normalize(kernel)
+
 
         # Find brightest pixel of PSF--assume that is the origin
         # Just assuming that the origin is half of szs1 can lead to
         # unwanted pixel shifts--but this assumes that origin should
         # be centered on brightest pixel.
-        self.origin = list(numpy.where( kernel == kernel.max() )).pop()
+        brightPixel = list(numpy.where( kernel == kernel.max() )).pop()
 
+        origin = None
         # if more than one pixel qualifies as brightest, such as const2D
         # use the middle of subkernel -- assumes the user provided center at
         # time of kernel extraction, so that should be middle of subkernel.
-        if (not numpy.isscalar(self.origin)) and len(self.origin) != 1:
-            self.origin = set_origin(kshape)
+        if (not numpy.isscalar(brightPixel)) and len(brightPixel) != 1:
+            origin = set_origin(kshape)
         else:
-            self.origin = set_origin(kshape, self.origin)
+            origin = set_origin(kshape, brightPixel)
+
+        if self.origin is None:
+            self.origin = origin
 
         if self.is_model and not self.frozen:
             # if the kernel model has thawed parameters, clear the old FFT and
@@ -300,13 +306,14 @@ class RadialProfileKernel(PSFKernel):
                  norm=True, frozen=True,
                  center=None, size=None, lo=None, hi=None, width=None,
                  args=[], kwargs={},
-                 pad_mask=None, do_pad=False):
+                 pad_mask=None, do_pad=False, origin=None):
 
         self.radialsize = None
         PSFKernel.__init__(self, dshape, kshape, is_model, norm,
                            frozen, center, size, lo, hi, width, args, kwargs,
-                           pad_mask, do_pad)
+                           pad_mask, do_pad, origin)
         self.radial = 1
+
 
     def __str__(self):
         return (PSFKernel.__str__(self) + '\n' +
@@ -453,9 +460,31 @@ class PSFModel(Model):
 
     size = property(_get_size, _set_size, doc='array of size parameters')
 
+
+    def _get_origin(self):
+        if self._origin is not None:
+            if len(self._origin) == 1:
+                return self._origin[0]
+        return self._origin
+
+
+    def _set_origin(self, vals):
+        par = vals
+        if type(vals) in (str,numpy.string_):
+            raise PSFErr('notstr')
+        elif type(vals) not in (list, tuple, numpy.ndarray):
+            par = [vals]
+        self._origin = tuple(par)
+        if par is None:
+            self._origin = None
+
+
+    origin = property(_get_origin, _set_origin, doc='FFT origin')
+
     def __init__(self, name='psfmodel', kernel=None):
         self._name = name
         self._size = None
+        self._origin = None
         self._center = None
         self.radial = Parameter(name, 'radial', 0, 0, 1, hard_min=0,
                                 hard_max=1, alwaysfrozen=True)
@@ -479,6 +508,10 @@ class PSFModel(Model):
             s += ('\n   %-12s %-6s %12s %12s %12s' %
                   ('%s.center' % self._name, 'frozen',
                    self.center, self.center, self.center))
+        if self.origin is not None:
+            s += ('\n   %-12s %-6s %12s %12s %12s' %
+                  ('%s.origin' % self._name, 'frozen',
+                   self.origin, self.origin, self.origin))
         for p in [self.radial, self.norm]:
 	    s += ('\n   %-12s %-6s %12g %12g %12g %10s' %
                   (p.fullname, 'frozen', p.val, p.min, p.max, p.units))
@@ -516,13 +549,14 @@ class PSFModel(Model):
         kshape = None
         dshape = data.get_dims()
 
-        (size, center,
-         kargs['norm'], radial) = (self.size, self.center,
+        (size, center, origin,
+         kargs['norm'], radial) = (self.size, self.center, self.origin,
                                    bool_cast(self.norm.val),
                                    int(self.radial.val))
 
         kargs['size'] = size
         kargs['center'] = center
+        kargs['origin'] = origin
         kargs['is_model']=False
         kargs['do_pad']=False
 
@@ -549,7 +583,7 @@ class PSFModel(Model):
 
         else:
             if (self.kernel is None) or (not callable(self.kernel)):
-                raise PSFErr('nopsf', self._name)
+                raise PSFErr('nopsf', psf.name)
             kshape = data.get_dims()
             #(kargs['lo'], kargs['hi'],
             # kargs['width']) = _get_axis_info(kargs['args'], dshape)
@@ -579,11 +613,11 @@ class PSFModel(Model):
 
 
         # check size of self.size to ensure <= dshape for 2D
-        if len(dshape) > 1:
-            dsize = numpy.asarray(dshape)
-            ksize = numpy.asarray(self.size)
-            if True in (ksize>dsize):
-                raise PSFErr('badsize', ksize, dsize)
+#        if len(dshape) > 1:
+#            dsize = numpy.asarray(dshape)
+#            ksize = numpy.asarray(self.size)
+#            if True in (ksize>dsize):
+#                raise PSFErr('badsize', ksize, dsize)
 
         is_kernel = (kargs['is_model'] and not kargs['norm'] and
                      len(kshape) == 1)
@@ -606,19 +640,46 @@ class PSFModel(Model):
         return
 
 
-    def get_kernel(self, data, subkernel=True):
+    def _get_kernel_data(self, data, subkernel=True):
         self.fold(data)
         if self.kernel is None:
             raise PSFErr('notset')
         kernel = self.kernel
+        dep = None
+        indep = None
+        lo = None
+        hi = None
+
         if isinstance(kernel, Data):
-            kernel = numpy.asarray(kernel.get_dep())
+            dep = numpy.asarray(kernel.get_dep())
+            indep = kernel.get_indep()
+
         elif callable(kernel):
-            kernel = kernel(*self.model.args, **self.model.kwargs)
+            dep = kernel(*self.model.args, **self.model.kwargs)
+            indep = self.model.args
 
         kshape = self.model.kshape
         if subkernel:
-            (kernel, kshape) = self.model.init_kernel(kernel)
+            (dep, newshape) = self.model.init_kernel(dep)
+
+            if (numpy.array(kshape) != numpy.array(newshape)).any():
+                newindep = []
+                for axis in indep:
+                    args = extract_kernel(axis,
+                                             self.model.kshape,
+                                             self.model.size,
+                                             self.model.center,
+                                             self.model.lo,
+                                             self.model.hi,
+                                             self.model.width,
+                                             self.model.radial)
+                    newaxis = args[0]
+                    lo = args[3]  # subkernel offsets (lower bound)
+                    hi = args[4]  # subkernel offsets (upper bound)
+                    newindep.append(newaxis)
+                indep = newindep
+
+            kshape = newshape
 
         if self.model.frac is not None:
             info('PSF frac: %s' % self.model.frac)
@@ -626,4 +687,21 @@ class PSFModel(Model):
         if numpy.isscalar(kshape):
             kshape = [kshape]
 
-        return (kernel, kshape[::-1])
+        return (indep, dep, kshape, lo, hi)
+
+
+    def get_kernel(self, data, subkernel=True):
+
+        indep, dep, kshape, lo, hi = self._get_kernel_data(data, subkernel)
+
+        dataset = None
+        ndim = len(kshape)
+        if ndim == 1:
+            dataset = Data1D('kernel', indep[0], dep)
+        elif ndim == 2:
+            dataset = Data2D('kernel', indep[0], indep[1], dep,
+                             kshape[::-1])
+        else:
+            raise PSFErr('ndim')
+
+        return dataset

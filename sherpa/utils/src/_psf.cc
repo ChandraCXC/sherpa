@@ -311,9 +311,12 @@ static PyObject* tcdPyData_convolve( tcdPyData* self, PyObject* args )
   if( nAxes > 1 ) {
     for(int ii = 0; ii < nAxes; ii++) {
       long padfactor;
-      if ( EXIT_SUCCESS != _pad(dims_src[ii], padfactor ) ) {
+
+      long padSize = (dims_src[ii] > dims_kern[ii]) ? dims_src[ii] : dims_kern[ii];
+
+      if ( EXIT_SUCCESS != _pad(padSize, padfactor ) ) {
 	std::ostringstream err;
-	err << "Padding dimension length " << dims_src[ii] << " not supported";
+	err << "Padding dimension length " << padSize << " not supported";
 	PyErr_SetString( PyExc_TypeError, err.str().c_str() );
 	return NULL;
       }
@@ -506,7 +509,7 @@ static void _normalize_kernel( double* res, long len ) {
     res_sum += res[ii];
 
 
-  if( std::fabs(res_sum - 1) > DBL_EPSILON )
+  if ((res_sum != 0.0) && ( std::fabs(res_sum - 1) > DBL_EPSILON ))
     for( ii = 0; ii < len; ii++ )
       res[ii] /= res_sum;
   
@@ -517,12 +520,12 @@ static int _extract_kernel( const double* psf, const long* dims,
 			    const long ndims, const double* center,
 			    long* newdims, DoubleArray& res, int rad,
 			    double* xmin, double* xmax, double* width,
-			    double& psffrac) {
+			    double& psffrac, long* xlo, long* xhi) {
 
   long size=1;
   std::vector<long> nsize(ndims);
-  std::vector<long> xlo(ndims);
-  std::vector<long> xhi(ndims);
+  //std::vector<long> xlo(ndims);
+  //std::vector<long> xhi(ndims);
   
   if( NULL == psf )
     return EXIT_FAILURE;
@@ -542,6 +545,9 @@ static int _extract_kernel( const double* psf, const long* dims,
     //
     double diff = width[ii];
     double mid = center[ii];
+
+    //std::cout << "diff: " << diff << ", mid: " << mid << std::endl;
+
     //double mid = (xmin[ii]+xmax[ii])/2.0;
     if( rad == 1) mid = 0.0; 
 
@@ -551,6 +557,9 @@ static int _extract_kernel( const double* psf, const long* dims,
     // account below.
     double xlotmp = mid - ( newdims[ii] * diff / 2.0 );
     double xhitmp = mid + ( newdims[ii] * diff / 2.0 );
+
+    //std::cout << "xlotmp[: " << xlotmp << ", xhitmp: " << xhitmp << std::endl;
+
     double dlo,dhi;
     // this helps to ensure proper centering of radial profile PSF
     if ( rad == 1 ) {
@@ -568,6 +577,11 @@ static int _extract_kernel( const double* psf, const long* dims,
     //size *= nsize[ii];
     nsize[ii] = newdims[ii];
     size *= newdims[ii];
+  
+    //std::cout << "xlo[" << ii << "]: " << xlo[ii] << ", size[" << ii << "]: " << nsize[ii]
+    //	      << std::endl;
+
+
   }
 
   npy_intp npydims[1];
@@ -672,6 +686,8 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
   DoubleArray widths;
   LongArray dims_kern;
   LongArray dims_new;
+  LongArray lo;
+  LongArray hi;
   DoubleArray center;
   int radial;
   
@@ -743,19 +759,27 @@ static PyObject* extract_kernel( PyObject* self, PyObject* args )
     return NULL;
   }
 
+  if( EXIT_SUCCESS != lo.zeros( 1, dims_kern.get_dims() ) )
+    return NULL;
+
+  if( EXIT_SUCCESS != hi.zeros( 1, dims_kern.get_dims() ) )
+    return NULL;
+
   if( EXIT_SUCCESS != _extract_kernel( &kernel[0], &dims_kern[0], nAxes,
 				       &center[0], &dims_new[0], res,
 				       radial, &xlo[0], &xhi[0], &widths[0],
-				       frac) ) {
+				       frac, &lo[0], &hi[0]) ) {
     PyErr_SetString( PyExc_TypeError,
 		     (char*)"kernel extraction failed" );
     return NULL;
   }
   
-  return Py_BuildValue( (char*)"(NNd)",
+  return Py_BuildValue( (char*)"(NNdNN)",
 			res.return_new_ref(),
 			dims_new.return_new_ref(),
-			frac);
+			frac,
+			lo.return_new_ref(),
+			hi.return_new_ref());
 }
 
 

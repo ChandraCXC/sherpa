@@ -4879,6 +4879,23 @@ class Session(NoNewAttributesAfterInit):
         except IdentifierErr:
             pass
 
+        # If the PSF is Sherpa model and it implements the center
+        # attribute, then populate the model position parameters
+        # using the PSF center if the user has not already done so.
+        # Note: PSFKernel only.
+        if (psf.kernel is not None and callable(psf.kernel) and 
+            psf.model is not None and isinstance(psf.model, sherpa.instrument.PSFKernel)):
+
+            psf_center = psf.center
+            if numpy.isscalar(psf_center):
+                psf_center = [psf_center]
+            try:
+                center = psf.kernel.get_center()
+                if (numpy.asarray(center) == 0.0).all():
+                    psf.kernel.set_center(*psf_center, values=True)
+            except NotImplementedError:
+                pass
+
 
     def get_psf(self, id=None):
         """

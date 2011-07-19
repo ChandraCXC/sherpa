@@ -225,6 +225,7 @@ class PSFErr(SherpaErr):
             'nopsf'  : "model '%s' does not have an associated PSF function",
             'mismatch' : 'array size mismatch between %s and %s',
             'badsize' : 'PSF kernel size must be <=  data size, kernel: %s data: %s',
+            'ndim' : 'PSF model dimension must be <= 2'
             }
 
     def __init__(self, key, *args):

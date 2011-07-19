@@ -75,7 +75,7 @@ do
       -l) shift ; lang="$1";
 	  if test "$lang" = "python"; then
 	     # print deprecation warning, go on to next option
-	     echo "Sherpa WARNING: '-l python' option is now deprecated."
+	     echo "Sherpa WARNING: -l is no longer an option; Sherpa now supports Python only."
 	     echo ""
 	  elif test "$lang" = "slang"; then
 	     # print S-Lang no longer supported, exit

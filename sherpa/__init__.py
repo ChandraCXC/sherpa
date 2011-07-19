@@ -50,7 +50,7 @@ _banner = """
 -----------------------------------------------------
 Welcome to Sherpa: CXC's Modeling and Fitting Package
 -----------------------------------------------------
-Version: Sherpa %s Monday, May 12, 2011
+Version: Sherpa %s Monday, July 19, 2011
 """ % __versionstr__
 
 

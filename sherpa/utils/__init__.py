@@ -693,12 +693,15 @@ def dataspace1d(start, stop, step=1, numbins=None):
             raise TypeError("input has produced less than 2 bins, found start=%s stop=%s step=%s" % (start, stop, step))
 
     #xx = numpy.arange(start, stop, step, dtype=float)
-    xx = sao_arange(start, stop, step)
+    #xx = sao_arange(start, stop, step)
+    xx = None
     if numbins is not None:
         if numbins <= 1:
             raise TypeError("input should be numbins > 1, found numbins=%s" % numbins)
             
         xx = numpy.linspace(start, stop, numbins+1)
+    else:
+        xx = sao_arange(start, stop, step)
 
     xlo = numpy.array(xx[:-1])
     xhi = numpy.array(xx[1:])

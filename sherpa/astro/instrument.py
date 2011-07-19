@@ -4,10 +4,12 @@ import numpy
 from sherpa.utils.err import InstrumentErr, DataErr
 from sherpa.models.model import ArithmeticFunctionModel, NestedModel, \
     ArithmeticModel, CompositeModel, Model
-
+from sherpa.astro.io.wcs import WCS
+from sherpa.instrument import PSFModel as _PSFModel
 from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.data import BaseData
-from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp
+from sherpa.data import BaseData, Data1D
+from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
+    DataIMG
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
 from itertools import izip
@@ -19,7 +21,8 @@ __all__ = ('RMFModel', 'ARFModel', 'RSPModel',
            'ARFModelPHA', 'ARFModelNoPHA',
            'RSPModelPHA', 'RSPModelNoPHA',
            'MultiResponseSumModel', 'PileupRMFModel', 'RMF1D', 'ARF1D',
-           'Response1D', 'MultipleResponse1D','PileupResponse1D')
+           'Response1D', 'MultipleResponse1D','PileupResponse1D',
+           'PSFModel')
 
 
 class RMFModel(CompositeModel, ArithmeticModel):
@@ -937,3 +940,54 @@ class PileupResponse1D(NoNewAttributesAfterInit):
         if rmf is not None:
             model = PileupRMFModel(rmf, model, pha)
         return model
+
+
+class PSFModel(_PSFModel):
+
+    def fold(self, data):
+        _PSFModel.fold(self, data)
+
+        # Set WCS coordinates of kernel data set to match source data set.
+        if (isinstance(data, DataIMG) and
+            isinstance(self.kernel, DataIMG)):
+            self.kernel.set_coord(data.coord)
+
+
+    def get_kernel(self, data, subkernel=True):
+
+        indep, dep, kshape, lo, hi = self._get_kernel_data(data, subkernel)
+
+        # Use kernel data set WCS if available
+        eqpos = getattr(self.kernel, 'eqpos', None)
+        sky   = getattr(self.kernel, 'sky', None)
+
+        # If kernel is a model, use WCS from data if available
+        if callable(self.kernel):
+            eqpos = getattr(data, 'eqpos', None)
+            sky   = getattr(data, 'sky', None)
+
+        dataset = None
+        ndim = len(kshape)
+        if ndim == 1:
+            dataset = Data1D('kernel', indep[0], dep)
+
+        elif ndim == 2:
+
+            # Edit WCS to reflect the subkernel extraction in 
+            # physical coordinates.
+            if (subkernel and sky is not None and
+                lo is not None and hi is not None):
+
+                sky = WCS(sky.name, sky.type, sky.crval, 
+                          sky.crpix - lo, sky.cdelt, sky.crota,
+                          sky.epoch, sky.equinox)
+
+                # FIXME: Support for WCS only (non-Chandra) coordinate
+                # transformations?
+                
+            dataset = DataIMG('kernel', indep[0], indep[1], dep,
+                              kshape[::-1], sky=sky, eqpos=eqpos)
+        else:
+            raise PSFErr('ndim')
+
+        return dataset

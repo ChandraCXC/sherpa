@@ -223,40 +223,20 @@ class ResidImage(Image):
         Image.set_wcs(self, (self.eqpos, self.sky, self.name))
 
 
-class PSFImage(DataImage, ModelImage):
+class PSFImage(DataImage):
 
     def prepare_image(self, psf, data=None):
-        if callable(psf.kernel):
-            self.y, shape = psf.get_kernel(data, False)
-            self.y = self.y.reshape( *shape )
-            self.eqpos = getattr(data, 'eqpos', None)
-            self.sky = getattr(data, 'sky', None)
-            self.name = psf.kernel.name
-            return
-
-        self.y, shape = psf.get_kernel(data, False)
-        self.y = self.y.reshape( *shape )
-        self.eqpos = getattr(psf.kernel, 'eqpos', None)
-        self.sky = getattr(psf.kernel, 'sky', None)
+        psfdata = psf.get_kernel(data, False)
+        DataImage.prepare_image(self, psfdata)
         self.name = psf.kernel.name
 
 
 class PSFKernelImage(DataImage):
 
     def prepare_image(self, psf, data=None):
+        psfdata = psf.get_kernel(data)
+        DataImage.prepare_image(self, psfdata)
         self.name = 'PSF_Kernel'
-
-        if callable(psf.kernel):
-            self.y, shape = psf.get_kernel(data)
-            self.y = self.y.reshape( *shape )
-            self.eqpos = getattr(data, 'eqpos', None)
-            self.sky = getattr(data, 'sky', None)
-            return
-
-        self.y, shape = psf.get_kernel(data)
-        self.y = self.y.reshape( *shape )
-        self.eqpos = getattr(psf.kernel, 'eqpos', None)
-        self.sky = getattr(psf.kernel, 'sky', None)
 
 
 class ComponentSourceImage(ModelImage):

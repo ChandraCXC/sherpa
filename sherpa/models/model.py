@@ -131,6 +131,13 @@ class Model(NoNewAttributesAfterInit):
     def guess(self, dep, *args, **kwargs):
 	raise NotImplementedError
 
+    def get_center(self):
+        raise NotImplementedError
+
+    def set_center(self, *args, **kwargs):
+        raise NotImplementedError
+
+
     def __call__(self, *args, **kwargs):
         # A bit of trickery, to make model creation
         # in IPython happen without raising errors, when

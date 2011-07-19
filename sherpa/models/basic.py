@@ -95,6 +95,11 @@ class Delta1D(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.pos, self.ampl))
 
+    def get_center(self):
+        return (self.pos.val,)
+
+    def set_center(self, pos, *args, **kwargs):
+        self.pos.set(pos)
 
     def guess(self, dep, *args, **kwargs):
         norm = guess_amplitude(dep, *args)
@@ -184,6 +189,11 @@ class Gauss1D(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos, self.ampl))
 
+    def get_center(self):
+        return (self.pos.val,)
+
+    def set_center(self, pos, *args, **kwargs):
+        self.pos.set(pos)
 
     def guess(self, dep, *args, **kwargs):
         norm = guess_amplitude(dep, *args)
@@ -254,6 +264,12 @@ class NormGauss1D(ArithmeticModel):
         self.pos = Parameter(name, 'pos', 0)
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.fwhm, self.pos, self.ampl))
+
+    def get_center(self):
+        return (self.pos.val,)
+
+    def set_center(self, pos, *args, **kwargs):
+        self.pos.set(pos)
 
     def guess(self, dep, *args, **kwargs):
         ampl = guess_amplitude(dep, *args)
@@ -556,6 +572,12 @@ class Delta2D(ArithmeticModel):
         ArithmeticModel.__init__(self, name, (self.xpos, self.ypos, self.ampl))
         self.cache = 0
 
+    def get_center(self):
+        return (self.xpos.val, self.ypos.val)
+
+    def set_center(self, xpos, ypos, *args, **kwargs):
+        self.xpos.set(xpos)
+        self.ypos.set(ypos)
 
     def guess(self, dep, *args, **kwargs):
         xpos, ypos = guess_position(dep, *args)
@@ -585,6 +607,12 @@ class Gauss2D(ArithmeticModel):
                                   self.theta, self.ampl))
         self.cache = 0
 
+    def get_center(self):
+        return (self.xpos.val, self.ypos.val)
+
+    def set_center(self, xpos, ypos, *args, **kwargs):
+        self.xpos.set(xpos)
+        self.ypos.set(ypos)
 
     def guess(self, dep, *args, **kwargs):
         xpos, ypos = guess_position(dep, *args)
@@ -615,6 +643,12 @@ class NormGauss2D(ArithmeticModel):
                                   self.theta, self.ampl))
         self.cache = 0
 
+    def get_center(self):
+        return (self.xpos.val, self.ypos.val)
+
+    def set_center(self, xpos, ypos, *args, **kwargs):
+        self.xpos.set(xpos)
+        self.ypos.set(ypos)
 
     def guess(self, dep, *args, **kwargs):
         xpos, ypos = guess_position(dep, *args)

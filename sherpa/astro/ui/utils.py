@@ -5185,6 +5185,31 @@ class Session(sherpa.ui.utils.Session):
         d.counts = sherpa.utils.poisson_noise( d.eval_model(m) )
         d.name = 'faked'
 
+
+    ###########################################################################
+    # PSF
+    ###########################################################################
+
+    def load_psf(self, modelname, filename_or_model, *args, **kwargs):    
+        kernel = filename_or_model
+        if isinstance(filename_or_model, basestring):
+            try:
+                kernel = self._eval_model_expression(filename_or_model)
+            except:
+                try:
+                    kernel = self.unpack_data(filename_or_model,
+                                              *args, **kwargs)
+                except:
+                    raise
+
+        psf = sherpa.astro.instrument.PSFModel(modelname, kernel)
+        self._add_model_component(psf)
+        self._psf_models.append(psf)
+
+
+    load_psf.__doc__ = sherpa.ui.utils.Session.load_psf.__doc__
+
+
     ###########################################################################
     # Models
     ###########################################################################
@@ -5201,18 +5226,21 @@ class Session(sherpa.ui.utils.Session):
 
             if data._responses:
 
-                instruments = (sherpa.astro.instrument.RMFModel,
+                instruments = (sherpa.astro.instrument.RSPModel,
+                               sherpa.astro.instrument.RMFModel,
                                sherpa.astro.instrument.ARFModel,
                                sherpa.astro.instrument.MultiResponseSumModel,
                                sherpa.astro.instrument.PileupRMFModel)
 
                 do_warning = True
                 #if type(model) in instruments:
-                if isinstance(model, instruments):
+                #if isinstance(model, instruments):
+                if sherpa.ui.utils._is_subclass(type(model), instruments):
                     do_warning = False
                 for part in model:
                     #if type(part) in instruments:
-                    if isinstance(part, instruments):
+                    #if isinstance(part, instruments):
+                    if sherpa.ui.utils._is_subclass(type(part), instruments):
                         do_warning = False
                 if do_warning:
                     warning("PHA source model '%s' \ndoes not" %
@@ -5501,18 +5529,21 @@ class Session(sherpa.ui.utils.Session):
         data = self.get_bkg(id, bkg_id)
         if data.units != 'channel' and data._responses:
 
-            instruments = (sherpa.astro.instrument.RMFModel,
+            instruments = (sherpa.astro.instrument.RSPModel,
+                           sherpa.astro.instrument.RMFModel,
                            sherpa.astro.instrument.ARFModel,
                            sherpa.astro.instrument.MultiResponseSumModel,
                            sherpa.astro.instrument.PileupRMFModel)
 
             do_warning = True
             #if type(model) in instruments:
-            if isinstance(model, instruments):
+            #if isinstance(model, instruments):
+            if sherpa.ui.utils._is_subclass(type(model), instruments):
                 do_warning = False
             for part in model:
                 #if type(part) in instruments:
-                if isinstance(part, instruments):
+                #if isinstance(part, instruments):
+                if sherpa.ui.utils._is_subclass(type(part), instruments):
                     do_warning = False
             if do_warning:
                 self.delete_bkg_model(id,bkg_id)

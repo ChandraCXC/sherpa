@@ -2,6 +2,7 @@
 
 from sherpa.utils import SherpaTest, SherpaTestCase, needs_data
 import sherpa.astro.ui as ui
+import numpy
 
 class test_ui(SherpaTestCase):
 
@@ -83,6 +84,45 @@ class test_ui(SherpaTestCase):
 
         ui.load_filter(self.filter_single_log_table)
         ui.load_filter(self.filter_single_log_table, ignore=True)
+
+
+class test_psf_ui(SherpaTestCase):
+
+    models1d = ['beta1d', 'lorentz1d', 'normbeta1d']
+    models2d = ['beta2d', 'devaucouleurs2d', 'hubblereynolds', 'lorentz2d']
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_psf_model2d(self):
+        ui.dataspace1d(1, 10)
+        for model in self.models1d:
+            try:
+                ui.load_psf('psf1d', model+'.mdl')
+                ui.set_psf('psf1d')
+                mdl = ui.get_model_component('mdl')
+                self.assert_( (numpy.array(mdl.get_center()) ==
+                               numpy.array([4])).all() )
+            except:
+                print model
+                raise
+
+
+    def test_psf_model2d(self):
+        ui.dataspace2d([216,261])
+        for model in self.models2d:
+            try:
+                ui.load_psf('psf2d', model+'.mdl')
+                ui.set_psf('psf2d')
+                mdl = ui.get_model_component('mdl')
+                self.assert_( (numpy.array(mdl.get_center()) ==
+                               numpy.array([108,130])).all() )
+            except:
+                print model
+                raise
 
 
 if __name__ == '__main__':
